@@ -93,7 +93,20 @@ class H2dCommandsTest extends hxd.App {
 		send("click: text:Go", "click", {target: "text:Go"}, o -> done(o));
 		check("click: Go fired once", () -> expectEqual(1, count("Go"), "Go clicks"));
 
-		send("click: name:cell inside a rotated container", "click", {target: "name:cell"}, o -> done(o));
+		// 40x20 at local 0,0 in a container at (200,40) turned a quarter: scene x 180..200, y 40..80;
+		// through the letterbox (x2, offsetX 100) that is 460,80 and 40x80 in the window.
+		send("find: the rotated cell's box, in window pixels", "find", {target: "name:cell"}, o -> {
+			var n = done(o);
+			if (n == null) return;
+			expectEqual(460, n.x, "x"); expectEqual(80, n.y, "y");
+			expectEqual(40, n.w, "w"); expectEqual(80, n.h, "h");
+		});
+		send("click: name:cell inside a rotated container", "click", {target: "name:cell"}, o -> {
+			var r = done(o);
+			if (r == null) return;
+			// The centre of the box, not the Interactive's origin corner (scene 200,40 = window 500,80).
+			expectEqual(480, r.x, "click x"); expectEqual(120, r.y, "click y");
+		});
 		check("click: the rotated cell fired once", () -> expectEqual(1, count("cell"), "cell clicks"));
 
 		send("click: a covered button is occluded", "click", {target: "text:Under"}, o -> {
