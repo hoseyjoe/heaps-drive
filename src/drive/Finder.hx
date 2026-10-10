@@ -32,6 +32,13 @@ class Finder {
 		return Many(all.slice(0, MAX_CANDIDATES));
 	}
 
+	/** Whether at least one finder takes `spec` as its kind of target (answers anything but Unknown).
+	    A malformed target is not "gone": it is a mistake, and a wait on it must say so. */
+	public function recognises(spec:Dynamic):Bool {
+		for (f in finders) if (!f.resolve(spec, false).match(Unknown)) return true;
+		return false;
+	}
+
 	public function tree(within:Dynamic, includeHidden:Bool):Null<Array<Node>> {
 		var all:Array<Node> = [], any = false;
 		for (f in finders) {

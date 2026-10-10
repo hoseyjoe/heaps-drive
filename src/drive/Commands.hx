@@ -183,7 +183,13 @@ class Commands {
 		var cond:Dynamic = a.condition;
 		if (cond == null || !Reflect.isObject(cond)) return Failed("bad_request", "wait needs a condition: exists, gone, text, or one of the app's");
 		var c = host == null ? null : host.condition(cond);
-		if (c == null) c = generic(cond);
+		if (c == null) {
+			var target:Dynamic = cond.exists != null ? cond.exists : cond.gone != null ? cond.gone : cond.text;
+			if (target != null && !finder.recognises(target))
+				return Failed("bad_request", "no finder takes the target " + haxe.Json.stringify(target)
+					+ ": a target is #id, text:Exact, text~:part, name:objectName or one of the app's prefixes");
+			c = generic(cond);
+		}
 		if (c == null) return Failed("bad_request", "unknown condition " + haxe.Json.stringify(cond));
 		var check = c.check, seen = c.seen;
 		return Later(() -> check() ? Done({seen: seen()}) : null, clock() + ms / 1000, seen);

@@ -111,6 +111,17 @@ class CommandsTest extends utest.Test {
 		Assert.equals("ok", code(settle(run("wait", {condition: {gone: "text:Nope"}}))), "gone holds when nothing is found");
 	}
 
+	function testWaitRefusesATargetNoFinderRecognises() {
+		for (kind in ["gone", "exists"]) {
+			var cond:Dynamic = {};
+			Reflect.setField(cond, kind, "banana");
+			var o = run("wait", {condition: cond});
+			Assert.equals("bad_request", code(o), kind);
+			switch (o) { case Failed(_, error, _): Assert.isTrue(error.indexOf("banana") >= 0 && error.indexOf("#id") >= 0, error); case _: }
+		}
+		Assert.equals("bad_request", code(run("wait", {condition: {text: "banana", equals: "x"}})));
+	}
+
 	function testResizeAnswersOnceTheWindowHasTheSize() {
 		switch (settle(run("resize", {w: 1000, h: 450}))) {
 			case Done(r): Assert.equals(1000, r.w); Assert.equals(450, r.h);

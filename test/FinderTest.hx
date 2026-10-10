@@ -41,6 +41,14 @@ class FinderTest extends utest.Test {
 		}
 	}
 
+	function testRecognisesIsFalseWhenEveryFinderIsUnknownAndTrueOnceOneAnswers() {
+		var a = new FakeTargets(), b = new FakeTargets();
+		var finder = new Finder([a, b]);
+		Assert.isFalse(finder.recognises("banana"));
+		b.table.set("banana", Missing("nothing called banana"));
+		Assert.isTrue(finder.recognises("banana"));
+	}
+
 	function testCandidatesAreCappedAtTwenty() {
 		var a = new FakeTargets();
 		a.table.set("text:Row", Many([for (i in 0...30) FakeTargets.node("r" + i)]));
