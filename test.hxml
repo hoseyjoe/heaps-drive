@@ -1,0 +1,7 @@
+-cp src
+-cp test
+-lib utest
+-main TestAll
+-hl bin/test.hl
+--debug
+--cmd hl bin/test.hl

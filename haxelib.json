@@ -1,0 +1,12 @@
+{
+	"name": "heaps-drive",
+	"url": "",
+	"license": "MIT",
+	"tags": ["heaps", "haxeui", "testing", "automation"],
+	"description": "Drive a Heaps app's real GUI from outside, without the user's mouse or keyboard.",
+	"version": "0.1.0",
+	"classPath": "src",
+	"releasenote": "First version: HashLink desktop.",
+	"contributors": [],
+	"dependencies": {}
+}
