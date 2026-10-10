@@ -1,0 +1,11 @@
+# Heaps tests that need a window (HL): synthetic input through hxd.Window.event, real hit-testing.
+-cp src
+-cp tests-heaps
+-lib heaps
+-lib hlsdl
+-D drive
+-D windowSize=800x600
+-main H2dCommandsTest
+-hl bin/test-heaps/H2dCommandsTest.hl
+--debug
+--cmd hl bin/test-heaps/H2dCommandsTest.hl
