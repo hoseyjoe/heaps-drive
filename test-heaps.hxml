@@ -9,3 +9,19 @@
 -hl bin/test-heaps/H2dCommandsTest.hl
 --debug
 --cmd hl bin/test-heaps/H2dCommandsTest.hl
+
+--next
+
+# The HaxeUI finder, and a press reaching HaxeUI through hxd.Window.event (MouseHelper).
+-cp src
+-cp tests-heaps
+-lib heaps
+-lib hlsdl
+-lib haxeui-core
+-lib haxeui-heaps
+-D drive
+-D resourcesPath=tests-heaps/res
+-main HaxeuiTest
+-hl bin/test-heaps/HaxeuiTest.hl
+--debug
+--cmd hl bin/test-heaps/HaxeuiTest.hl
