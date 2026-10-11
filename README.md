@@ -8,6 +8,12 @@ off-screen and never takes the foreground. HashLink desktop only, so far.
 Lifted from Simplified's desktop automation channel; the design is JoeClash's
 `docs/superpowers/specs/2026-10-10-gui-drive-design.md`.
 
+## Installing
+
+    haxelib git heaps-drive https://github.com/hoseyjoe/heaps-drive.git
+
+(or `haxelib dev heaps-drive <your clone>` to work on it). Not on lib.haxe.org.
+
 ## Using it
 
 1. `-lib heaps-drive -D drive` in a build of its own. Without `-D drive` nothing compiles in.
