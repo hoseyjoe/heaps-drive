@@ -12,6 +12,8 @@ Lifted from Simplified's desktop automation channel; the design is JoeClash's
 
 1. `-lib heaps-drive -D drive` in a build of its own. Without `-D drive` nothing compiles in.
 2. Before the window is made: `drive.heaps.OffScreen.install();` (`DRIVE_VISIBLE=1` keeps it on screen).
+   Off-screen it also replaces heaps' blocking "Uncaught Exception" window: an uncaught error goes
+   to stderr and the process exits with code 70.
 3. Once the scene exists:
    `drive.Start.start(host, [new drive.haxeui.Targets(s2d), new drive.h2d.Targets(s2d), /* yours */], s2d, hxd.Window.getInstance(), dir);`
    `host` is an `IDriveHost` (your wait conditions, `state`, `quit`), or null.
