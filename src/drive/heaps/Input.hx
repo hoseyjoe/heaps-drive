@@ -30,7 +30,7 @@ class Input implements drive.IInput {
 	/** Keys and buttons pressed and not yet released, so a client that vanishes mid-key or mid-drag
 	    can be undone (`releaseHeld`). */
 	var heldKeys:Array<Int> = [];
-	var heldButtons:Array<{x:Float, y:Float, button:Int}> = [];
+	var heldButtons:Array<Int> = [];
 
 	public function new(window:hxd.Window) this.window = window;
 
@@ -44,18 +44,20 @@ class Input implements drive.IInput {
 	public function move(x:Float, y:Float):Void send(EMove, x, y);
 
 	public function push(x:Float, y:Float, button:Int):Void {
-		heldButtons.push({x: x, y: y, button: button});
+		if (heldButtons.indexOf(button) < 0) heldButtons.push(button);
 		send(EPush, x, y, e -> e.button = button);
 	}
 
 	public function release(x:Float, y:Float, button:Int):Void {
-		heldButtons = [for (h in heldButtons) if (h.button != button) h];
+		heldButtons.remove(button);
 		send(ERelease, x, y, e -> e.button = button);
 	}
 
+	/** Lets go where the pointer is NOW, not where the button went down: an abandoned drag that had
+	    moved off its source releases outside it, and never clicks it. */
 	public function releaseHeld():Void {
 		for (k in heldKeys.copy()) keyUp(k);
-		for (h in heldButtons.copy()) release(h.x, h.y, h.button);
+		for (b in heldButtons.copy()) release(window.mouseX, window.mouseY, b);
 	}
 
 	public function click(x:Float, y:Float, button:Int, double:Bool):Void {

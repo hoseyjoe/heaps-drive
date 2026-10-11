@@ -13,6 +13,7 @@ class H2dCommandsTest extends hxd.App {
 
 	var counts = new Map<String, Int>();
 	var font:h2d.Font;
+	var input:drive.heaps.Input;
 
 	function bump(what:String) counts.set(what, count(what) + 1);
 	function count(what:String):Int return counts.exists(what) ? counts.get(what) : 0;
@@ -69,13 +70,16 @@ class H2dCommandsTest extends hxd.App {
 		drag.x = 250; drag.y = 250; drag.name = "drag";
 		drag.onPush = _ -> bump("push");
 		drag.onRelease = _ -> bump("release");
+		drag.onReleaseOutside = _ -> bump("releaseOutside");
+		drag.onClick = _ -> bump("dragClick");
 
 		// A green square at a known place, for the screenshot.
 		var mark = new h2d.Graphics(s2d);
 		mark.beginFill(0x00FF00); mark.drawRect(260, 10, 20, 20); mark.endFill();
 
 		var w = hxd.Window.getInstance();
-		Steps.commands = new Commands(new Finder([new drive.h2d.Targets(s2d)]), new drive.heaps.Input(w),
+		input = new drive.heaps.Input(w);
+		Steps.commands = new Commands(new Finder([new drive.h2d.Targets(s2d)]), input,
 			new drive.heaps.Shot(s2d), new drive.heaps.HeapsWindow(w), null, haxe.Timer.stamp);
 		define();
 	}
@@ -141,6 +145,22 @@ class H2dCommandsTest extends hxd.App {
 			Steps.commands.releaseHeld();
 		});
 		check("releaseHeld: the held button was let go", () -> expectEqual(2, count("release"), "releases"));
+		// Abandoned AWAY from its source: let go where the pointer is now, so it never clicks the source.
+		// The square is canvas 250,250 30x30 = window 600..660, 500..560; window 300,590 is clear of it.
+		// (heaps calls onRelease for a release outside too, then onReleaseOutside: what tells them apart
+		// is onReleaseOutside and the missing onClick.)
+		var clicksBefore = 0;
+		check("releaseHeld: push on the square, move away and abandon it", () -> {
+			clicksBefore = count("dragClick");
+			input.push(630, 530, 0);
+			input.move(300, 590);
+			Steps.commands.releaseHeld();
+		});
+		check("releaseHeld: let go at the pointer, outside the square, so it is not clicked", () -> {
+			expectEqual(3, count("push"), "pushes");
+			expectEqual(1, count("releaseOutside"), "releases outside it");
+			expectEqual(clicksBefore, count("dragClick"), "clicks on the square");
+		});
 
 		send("shot: the whole canvas", "shot", {file: "bin/test-heaps/whole.png"}, o -> {
 			var r = done(o);
