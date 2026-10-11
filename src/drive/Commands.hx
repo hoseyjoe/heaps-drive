@@ -184,6 +184,9 @@ class Commands {
 		if (cond == null || !Reflect.isObject(cond)) return Failed("bad_request", "wait needs a condition: exists, gone, text, or one of the app's");
 		var c = host == null ? null : host.condition(cond);
 		if (c == null) {
+			// With nothing to compare, a text wait could only ever time out.
+			if (cond.exists == null && cond.gone == null && cond.text != null && cond.equals == null && cond.contains == null)
+				return Failed("bad_request", "a text condition needs equals or contains");
 			var target:Dynamic = cond.exists != null ? cond.exists : cond.gone != null ? cond.gone : cond.text;
 			if (target != null && !finder.recognises(target))
 				return Failed("bad_request", "no finder takes the target " + haxe.Json.stringify(target)

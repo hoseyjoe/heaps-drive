@@ -122,6 +122,13 @@ class CommandsTest extends utest.Test {
 		Assert.equals("bad_request", code(run("wait", {condition: {text: "banana", equals: "x"}})));
 	}
 
+	function testWaitTextNeedsEqualsOrContains() {
+		targets.table.set("text:Go", Found(FakeTargets.hit("go", 1, 1)));
+		var o = run("wait", {condition: {text: "text:Go"}});
+		Assert.equals("bad_request", code(o), "a text condition with nothing to compare could only time out");
+		switch (o) { case Failed(_, error, _): Assert.isTrue(error.indexOf("equals") >= 0 && error.indexOf("contains") >= 0, error); case _: }
+	}
+
 	function testResizeAnswersOnceTheWindowHasTheSize() {
 		switch (settle(run("resize", {w: 1000, h: 450}))) {
 			case Done(r): Assert.equals(1000, r.w); Assert.equals(450, r.h);
