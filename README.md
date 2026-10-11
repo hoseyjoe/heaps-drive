@@ -22,12 +22,13 @@ Lifted from Simplified's desktop automation channel; the design is JoeClash's
 ## Targets
 
 `#id` and `text:` / `text~:` for HaxeUI; `name:` and `text:` / `text~:` for h2d (a label Text over a
-sibling Interactive — the smallest one if several); your own prefixes through an `ITargets`. A target
-matching more than one thing, in one finder or across finders, is `ambiguous` with the candidates.
-Every position is a window pixel.
+sibling Interactive — the smallest one if several, ambiguous if two tie); your own prefixes through an
+`ITargets`. A target matching more than one thing, in one finder or across finders, is `ambiguous`
+with the candidates. Every position is a window pixel. With the HaxeUI finder among them, `key`
+answers `{focused}` (the focused component's id, or its type); `Commands.focused` is that hook.
 
 ## Tests
 
     haxe test.hxml           # headless: protocol, session, server, finder, command table
-    haxe test-heaps.hxml     # windowed: the h2d and HaxeUI finders, real hit-testing
+    haxe test-heaps.hxml     # windowed, off-screen: the h2d and HaxeUI finders, real hit-testing
     node tools/selftest.mjs  # end to end: launch the example off-screen and drive it

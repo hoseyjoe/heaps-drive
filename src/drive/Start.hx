@@ -11,6 +11,10 @@ class Start {
 		var token = newToken();
 		var commands = new Commands(new Finder(finders), new drive.heaps.Input(window), new drive.heaps.Shot(scene),
 			new drive.heaps.HeapsWindow(window), host, haxe.Timer.stamp);
+		#if haxeui_core
+		// `key` answers what has the focus when HaxeUI is a finder: HaxeUI is what knows.
+		for (f in finders) if (Std.isOfType(f, drive.haxeui.Targets)) commands.focused = drive.haxeui.Targets.focused;
+		#end
 		var server = new Server(token, commands.dispatch, haxe.Timer.stamp);
 		// A client that goes away, or a `key`/`drag` that times out, must not leave a key or button held.
 		server.onClientGone = commands.releaseHeld;

@@ -5,7 +5,7 @@ import utest.Assert;
 import drive.Protocol;
 import drive.Server;
 
-/** The automation channel over a real loopback socket (desktop automation spec §3). */
+/** The drive channel over a real loopback socket (heaps-drive spec §1). */
 class ServerTest extends utest.Test {
     var server:Server;
 

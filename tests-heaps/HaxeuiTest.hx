@@ -17,6 +17,7 @@ class HaxeuiTest {
 	static var targets:drive.haxeui.Targets;
 
 	public static function main() {
+		drive.heaps.OffScreen.install();   // never on the user's screen (DRIVE_VISIBLE=1 to watch)
 		var app = new HaxeUIApp();
 		app.ready(() -> {
 			hxd.Window.getInstance().title = "HaxeuiTest";
@@ -40,6 +41,7 @@ class HaxeuiTest {
 			var w = hxd.Window.getInstance();
 			Steps.commands = new Commands(new Finder([targets]), new drive.heaps.Input(w), new drive.heaps.Shot(scene),
 				new drive.heaps.HeapsWindow(w), null, haxe.Timer.stamp);
+			Steps.commands.focused = drive.haxeui.Targets.focused;   // as Start sets it
 			define();
 			haxe.MainLoop.add(Steps.tick);
 		});

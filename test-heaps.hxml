@@ -1,9 +1,12 @@
 # Heaps tests that need a window (HL): synthetic input through hxd.Window.event, real hit-testing.
+# Each opens its window off-screen (drive.heaps.OffScreen; DRIVE_VISIBLE=1 to watch), which needs
+# the WindowPosition macro that -lib heaps-drive's extraParams would apply: these use -cp src.
 -cp src
 -cp tests-heaps
 -lib heaps
 -lib hlsdl
 -D drive
+--macro drive.macro.WindowPosition.register()
 -D windowSize=800x600
 -main H2dCommandsTest
 -hl bin/test-heaps/H2dCommandsTest.hl
@@ -20,6 +23,7 @@
 -lib haxeui-core
 -lib haxeui-heaps
 -D drive
+--macro drive.macro.WindowPosition.register()
 -D resourcesPath=tests-heaps/res
 -main HaxeuiTest
 -hl bin/test-heaps/HaxeuiTest.hl

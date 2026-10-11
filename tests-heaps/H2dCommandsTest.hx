@@ -9,7 +9,10 @@ import Steps.*;
  * button and a draggable square. Every press goes in through hxd.Window.event.
  */
 class H2dCommandsTest extends hxd.App {
-	static function main() new H2dCommandsTest();
+	static function main() {
+		drive.heaps.OffScreen.install();   // never on the user's screen (DRIVE_VISIBLE=1 to watch)
+		new H2dCommandsTest();
+	}
 
 	var counts = new Map<String, Int>();
 	var font:h2d.Font;
@@ -56,6 +59,12 @@ class H2dCommandsTest extends hxd.App {
 		bg.y = 180;
 		bg.onClick = _ -> bump("bg");
 		button(s2d, "Small", 20, 200, 60, 24);
+
+		// A label over two Interactives of the same size: neither is "the smallest", so no pick.
+		button(s2d, "Twin", 110, 10, 60, 24);
+		var twin = new h2d.Interactive(60, 24, s2d);
+		twin.x = 110; twin.y = 10;
+		twin.onClick = _ -> bump("twin");
 
 		// A label over no button at all (OverworldMap's city names sit below their node).
 		var floating = new h2d.Text(font, s2d);
@@ -130,6 +139,10 @@ class H2dCommandsTest extends hxd.App {
 			expectEqual(1, count("Small"), "Small clicks"); expectEqual(0, count("bg"), "bg clicks");
 		});
 
+		send("click: a label over two equal buttons is ambiguous", "click", {target: "text:Twin"}, o -> {
+			expectFailed(o, "ambiguous");
+			expectEqual(0, count("Twin") + count("twin"), "neither clicked");
+		});
 		send("find: a label over no button is not a target", "find", {target: "text:Floating"}, o -> expectFailed(o, "not_found"));
 		send("find: a hidden button is not found", "find", {target: "text:Ghost"}, o -> expectFailed(o, "not_found"));
 		send("find: includeHidden finds it", "find", {target: "text:Ghost", includeHidden: true}, o -> done(o));

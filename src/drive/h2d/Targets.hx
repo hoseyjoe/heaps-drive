@@ -11,7 +11,7 @@ import h2d.Object;
  * - `text:Label` / `text~:part` (any case) match a visible h2d.Text whose centre lies inside a
  *   visible SIBLING Interactive — UiButton's shape: a Text, a Graphics and an Interactive over one
  *   box, none of them named. When several siblings contain it (a full-screen scrim is a sibling
- *   too), the smallest is the button. A Text over no sibling Interactive is not a target: a label
+ *   too), the smallest is the button; two tied for smallest are ambiguous. A Text over no sibling Interactive is not a target: a label
  *   drawn beside its button would otherwise be a click on empty air.
  * - `{target, within: "name:..."}` searches under that one named object.
  * Visible means it and every parent are, and it is on this scene. Occlusion is the scene's own hit
@@ -91,24 +91,26 @@ class Targets implements drive.ITargets {
 		walk(scope, includeHidden, o -> {
 			var t = Std.downcast(o, h2d.Text);
 			if (t == null || !test(t.text)) return;
-			var b = buttonUnder(t, includeHidden);
-			if (b != null && out.indexOf(b) < 0) out.push(b);
+			for (b in buttonsUnder(t, includeHidden)) if (out.indexOf(b) < 0) out.push(b);
 		});
 		return out;
 	}
 
-	function buttonUnder(t:h2d.Text, includeHidden:Bool):Null<Interactive> {
-		if (t.parent == null) return null;
+	/** The smallest sibling Interactive holding the label's centre — or, when several tie for
+	    smallest, all of them: sibling order is not a reason to pick one, so the target is ambiguous. */
+	function buttonsUnder(t:h2d.Text, includeHidden:Bool):Array<Interactive> {
+		if (t.parent == null) return [];
 		var tb = t.getBounds();
 		var cx = (tb.xMin + tb.xMax) / 2, cy = (tb.yMin + tb.yMax) / 2;
-		var best:Null<Interactive> = null, bestArea = Math.POSITIVE_INFINITY;
+		var best:Array<Interactive> = [], bestArea = Math.POSITIVE_INFINITY;
 		for (s in t.parent) {
 			var i = Std.downcast(s, Interactive);
 			if (i == null || (!includeHidden && !i.visible)) continue;
 			var b = boundsOf(i);
 			if (cx < b.xMin || cx > b.xMax || cy < b.yMin || cy > b.yMax) continue;
 			var area = (b.xMax - b.xMin) * (b.yMax - b.yMin);
-			if (area < bestArea) { best = i; bestArea = area; }
+			if (area < bestArea) { best = [i]; bestArea = area; }
+			else if (area == bestArea) best.push(i);
 		}
 		return best;
 	}

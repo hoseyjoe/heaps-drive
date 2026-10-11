@@ -16,6 +16,9 @@ class Commands {
 	static inline var DRAG_FRAMES = 20;
 
 	public var onQuit:Void->Void = () -> {};
+	/** What has the keyboard focus, for `key`'s answer: an id or a type, null for nothing. Unset, `key`
+	    answers {} — the toolkit that knows is the app's (Start sets HaxeUI's when it is a finder). */
+	public var focused:Null<Void->Null<String>> = null;
 
 	var finder:Finder;
 	var input:IInput;
@@ -122,11 +125,7 @@ class Commands {
 		return Later(() -> {
 			if (++polls == 1) return null;
 			if (polls == 2) { for (k in codes) input.keyUp(k); return null; }
-			#if haxeui_core
-			return Done({focused: drive.haxeui.Targets.focused()});
-			#else
-			return Done({});
-			#end
+			return Done(focused == null ? {} : {focused: focused()});
 		}, clock() + DEFAULT_TIMEOUT_MS / 1000, () -> polls);
 	}
 

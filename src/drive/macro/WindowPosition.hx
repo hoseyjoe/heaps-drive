@@ -10,7 +10,7 @@ import haxe.macro.Expr;
  * SDL_WINDOWPOS_CENTERED, and SDL shows the window as it creates it, so moving it afterwards leaves
  * it on screen while the GL context is made (about 160 ms here). This adds
  * `hxd.Window.initialPosition` and makes the constructor use it when it is set. It also adds
- * `hxd.Window.initialFlags`, SDL window flags or-ed into the constructor's own: the automation build
+ * `hxd.Window.initialFlags`, SDL window flags or-ed into the constructor's own: the driven build
  * passes SDL_WINDOW_UTILITY, so its window is a tool window (WS_EX_TOOLWINDOW on Windows) that never
  * shows in the taskbar or Alt+Tab, from creation, before its first paint. Added to hxd.Window by
  * extraParams.hxml, only when -D drive and hlsdl are both defined.
@@ -44,20 +44,20 @@ class WindowPosition {
             case _:
         }
         if (!replaced)
-            Context.warning("hxd.Window creates no sdl.Window the way WindowPosition expects; the automation window will show centred before it is parked", Context.currentPos());
+            Context.warning("hxd.Window creates no sdl.Window the way WindowPosition expects; the driven window will show centred before it is parked", Context.currentPos());
         fields.push({
             name: "initialPosition",
             access: [APublic, AStatic],
             kind: FVar(macro :Null<{x:Int, y:Int}>, macro null),
             pos: Context.currentPos(),
-            doc: "Where the next window is created (automation build only); null: centred."
+            doc: "Where the next window is created (driven build only); null: centred."
         });
         fields.push({
             name: "initialFlags",
             access: [APublic, AStatic],
             kind: FVar(macro :Int, macro 0),
             pos: Context.currentPos(),
-            doc: "SDL window flags added to the next window's (automation build only)."
+            doc: "SDL window flags added to the next window's (driven build only)."
         });
         return fields;
     }

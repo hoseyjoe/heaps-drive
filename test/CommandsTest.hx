@@ -156,6 +156,18 @@ class CommandsTest extends utest.Test {
 		Assert.equals("bad_request", code(run("key", {name: "Hyper"})));
 	}
 
+	function testKeyAnswersTheFocusOnlyThroughTheHook() {
+		switch (settle(run("key", {name: "A"}))) {
+			case Done(r): Assert.same({}, r, "no hook: nothing about the focus");
+			case other: Assert.fail("" + other);
+		}
+		commands.focused = () -> "name";
+		switch (settle(run("key", {name: "A"}))) {
+			case Done(r): Assert.equals("name", r.focused);
+			case other: Assert.fail("" + other);
+		}
+	}
+
 	function testDragPushesMovesAndReleases() {
 		targets.table.set("#a", Found(FakeTargets.hit("a", 0, 0)));
 		switch (settle(run("drag", {from: "#a", to: {x: 20, y: 0}}), 30)) {

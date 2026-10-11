@@ -5,7 +5,7 @@ import haxe.io.Bytes;
 import drive.Protocol;
 
 /**
- * The automation channel's listener (heaps-drive spec §1): 127.0.0.1 on an OS-chosen port,
+ * The drive channel's listener (heaps-drive spec §1): 127.0.0.1 on an OS-chosen port,
  * one client at a time (another is answered `busy` and closed), polled from the UI thread by
  * `tick` with zero-timeout selects, so it never blocks a frame. Client sockets are non-blocking:
  * replies wait in an outbox drained each tick (see SocketConnection), so a client that never reads
