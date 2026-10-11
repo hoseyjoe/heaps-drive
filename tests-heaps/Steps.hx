@@ -25,10 +25,11 @@ class Steps {
 	/** A step that only checks (or changes the scene). */
 	public static function check(label:String, run:Void->Void) steps.push({name: label, run: run});
 
-	/** One step: dispatch, and when the command is `Later`, poll it once a frame until it answers. */
+	/** One step: dispatch, and when the command is `Later`, poll it once a frame until it answers.
+	    `args` may be a function, for arguments that need the laid-out scene. */
 	public static function send(label:String, cmd:String, args:Dynamic, answer:Outcome->Void)
 		steps.push({name: label, run: () -> {
-			var o = commands.dispatch({id: 1, cmd: cmd, args: args});
+			var o = commands.dispatch({id: 1, cmd: cmd, args: Reflect.isFunction(args) ? args() : args});
 			switch (o) {
 				case Later(poll, deadline, _):
 					var first = poll();
