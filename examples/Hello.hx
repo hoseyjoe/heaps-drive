@@ -27,6 +27,17 @@ class Hello extends hxd.App implements drive.IDriveHost {
 
 	public function condition(cond:Dynamic):Null<{check:Void->Bool, seen:Void->Dynamic}>
 		return cond.clicks != null ? {check: () -> clicks >= cond.clicks, seen: () -> (clicks : Dynamic)} : null;
-	public function state(args:Dynamic):Dynamic return {clicks: clicks};
+	/** `state {crash: true}` makes the NEXT frame throw from the update loop — not from this handler,
+	    which Session would turn into an `internal` error — for the selftest's crash step. */
+	public function state(args:Dynamic):Dynamic {
+		if (args != null && args.crash == true) crashNext = true;
+		return {clicks: clicks, crashing: crashNext};
+	}
+
+	var crashNext = false;
+
+	override function update(dt:Float) {
+		if (crashNext) throw "Hello: a crash on demand";
+	}
 	public function quit() hxd.System.exit();
 }

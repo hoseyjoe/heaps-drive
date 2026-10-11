@@ -6,8 +6,16 @@ package drive.heaps;
  * activation, a utility (tool) window — never in the taskbar or Alt+Tab — and created 200 px past
  * the right edge of every display, so it is never on a display at all. DRIVE_VISIBLE=1 keeps it on
  * screen. Call before the app creates its window. From Simplified's Main (its automation hook).
+ *
+ * An uncaught error never opens heaps' "Uncaught Exception" window either (hxd.System.reportError:
+ * a blocking hl.UI.WinLog on the user's screen, which stops the main loop until someone clicks it,
+ * so a client sees only its own timeout). Off-screen, the error and its stack go to stderr and the
+ * process exits with code 70; the socket closes with it.
  */
 class OffScreen {
+	/** The exit code of an app that died of an uncaught error (EX_SOFTWARE). */
+	public static inline var CRASH_EXIT_CODE = 70;
+
 	public static function install():Void {
 		// The first hint is SDL2's name; SDL3 (3.4) uses the other two: shown without activating,
 		// and hlsdl's SDL_RaiseWindow after creating it without either.
@@ -16,6 +24,7 @@ class OffScreen {
 		sdl.Sdl.setHint("SDL_WINDOW_ACTIVATE_WHEN_RAISED", "0");
 		var create = hxd.System.createWindow;
 		var visible = Sys.getEnv("DRIVE_VISIBLE") == "1";
+		if (!visible) hxd.System.reportError = crash;
 		hxd.System.createWindow = () -> {
 			var at = visible ? null : position();
 			hxd.Window.initialPosition = at;
@@ -29,6 +38,19 @@ class OffScreen {
 			}
 			return w;
 		};
+	}
+
+	/** heaps' reportError without its window: the same text (the error, then its stack) to stderr,
+	    flushed, then exit. */
+	static function crash(e:Dynamic):Void {
+		var exc = Std.downcast(e, haxe.Exception);
+		var stack = try haxe.CallStack.toString(exc != null ? exc.stack : haxe.CallStack.exceptionStack(true)) catch (_:Dynamic) "";
+		var err = try Std.string(e) catch (_:Dynamic) "????";
+		try {
+			Sys.stderr().writeString(err + stack + "\r\n");
+			Sys.stderr().flush();
+		} catch (_:Dynamic) {}
+		Sys.exit(CRASH_EXIT_CODE);
 	}
 
 	/** 200 px past the right edge of every display. hl.exe is per-monitor DPI aware, so SDL's display

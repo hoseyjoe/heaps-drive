@@ -52,6 +52,42 @@ try {
   if (app.exitCode === null && app.signalCode === null) app.kill();
 }
 
+// A crash: an uncaught error in the update loop must end the process (exit 70, the error on stderr)
+// and close the socket under a pending request — never open heaps' blocking "Uncaught Exception"
+// window on the user's screen and leave the client to time out.
+{
+  const crashDir = join(dir, "crash");
+  mkdirSync(crashDir, { recursive: true });
+  const crashFile = join(crashDir, "drive.json");
+  const crashApp = spawn("hl", ["bin/hello.hl"], { env: { ...process.env, DRIVE_DIR: crashDir }, stdio: ["ignore", "inherit", "pipe"], windowsHide: true });
+  let stderr = "";
+  crashApp.stderr.setEncoding("utf8");
+  crashApp.stderr.on("data", (s) => { stderr += s; });
+  const crashExited = new Promise((r) => crashApp.on("exit", r));
+  let cc = null;
+  try {
+    const deadline = Date.now() + 30000;
+    while (!existsSync(crashFile) && Date.now() < deadline) await new Promise((r) => setTimeout(r, 100));
+    if (!existsSync(crashFile)) throw new Error("the crash app never wrote drive.json");
+    cc = await connect(crashFile);
+    // Both sent at once: the wait is parked behind the state, so the crash lands under it.
+    const crashing = cc.send("state", { crash: true });
+    const parked = cc.send("wait", { condition: { clicks: 99 }, timeoutMs: 10000 }).then(() => "answered", (e) => e.message);
+    ok((await crashing).crashing === true, "the app accepted a crash on the next frame");
+    const why = await Promise.race([parked, new Promise((r) => setTimeout(() => r("no reply in 8 s"), 8000))]);
+    ok(why === "the app closed the connection", `the socket closed under the pending wait (${why})`);
+    const code = await Promise.race([crashExited, new Promise((r) => setTimeout(() => r("timeout"), 5000))]);
+    ok(code === 70, `the crashed app exited with code 70, no window left behind (code ${code})`);
+    ok(stderr.includes("a crash on demand"), "the error went to stderr");
+  } catch (e) {
+    console.log(`FAIL - ${e.stack ?? e}`);
+    failures++;
+  } finally {
+    if (cc) cc.close();
+    if (crashApp.exitCode === null && crashApp.signalCode === null) crashApp.kill();
+  }
+}
+
 // A drive.json left behind by a crashed run: a dead port must be an error, not a hang.
 writeFileSync(file, JSON.stringify({ port: 1, token: "stale" }));
 const out = (() => { try { execSync(`node tools/drive.mjs --file "${file}" state`, { stdio: "pipe" }); return { status: 0, err: "" }; } catch (e) { return { status: e.status, err: String(e.stderr) }; } })();
