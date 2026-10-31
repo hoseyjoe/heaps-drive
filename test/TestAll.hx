@@ -8,6 +8,7 @@ class TestAll {
 		runner.addCase(new ServerTest());
 		runner.addCase(new FinderTest());
 		runner.addCase(new CommandsTest());
+		runner.addCase(new StartTest());
 		// Before Report: its completion handler exits the process, non-zero on any failure.
 		Report.create(runner);
 		runner.run();
