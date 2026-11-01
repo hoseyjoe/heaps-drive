@@ -164,7 +164,7 @@ try {
   }
 
   // A reader that stalls: 3 MB of replies back up behind a client that is not reading, so the app
-  // writes them in pieces over later frames; once it reads, both arrive whole.
+  // cannot write them at once: its outbox backs up across ticks; once the client reads, both arrive whole.
   {
     const s = await rawConnect();
     s.pause();

@@ -52,7 +52,10 @@ class CsTransport implements ITransport {
 		}
 		var accepted = 0;
 		while (accepted++ < MAX_ACCEPTS_PER_TICK && listener.Poll(0, SelectMode.SelectRead)) {
-			var s = listener.Accept();
+			// A connection that was reset after the Poll made it readable has nothing to accept: not an error, and
+			// not a reason to lose this tick's other work.
+			var s:Null<NativeSocket> = try listener.Accept() catch (_:Dynamic) null;
+			if (s == null) continue;
 			if (session != null && !session.closed) refuse(s);
 			else {
 				endSession();
