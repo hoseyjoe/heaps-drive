@@ -33,7 +33,7 @@ Lifted from Simplified's desktop automation channel; the design is JoeClash's
 
 ## Using it (HaxeUI on C#)
 
-Needs `haxeui-cs` **with driver support, which is not released yet**: `AppDriver` and `-D haxeui_cs_drive`
+Needs `haxeui-cs` **with driver support, from commit `0d65add` on**: `AppDriver` and `-D haxeui_cs_drive`
 (raw input, capture, the off-screen window, `NewClick`), the file-picker refusal in a driven build, and an
 uncaught error in a timer ending the app with exit 70. Against a haxeui-cs without them it does not
 compile, or an app that throws sits there with its event loop dead and a client waits for nothing. Also
