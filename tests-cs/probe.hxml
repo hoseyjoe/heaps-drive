@@ -1,0 +1,13 @@
+# The channel on the C# target, headless: a probe app Start.open serves, driven by
+# tools/selftest-channel-cs.mjs. Builds the .csproj and runs `dotnet build`; the selftest launches it.
+# Uses -cp src (not -lib heaps-drive) so it never depends on which checkout haxelib points at.
+-cp src
+-cp tests-cs
+-lib haxeui-core
+-lib haxeui-cs
+-D haxeui_cs_headless
+-D haxeui_cs_drive
+-D drive
+-main ChannelProbe
+-cs bin/probe
+-w -WAll

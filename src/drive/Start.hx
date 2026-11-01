@@ -27,7 +27,8 @@ class Start {
 		// `key` answers what has the focus when HaxeUI is a finder: HaxeUI is what knows.
 		for (f in finders) if (Std.isOfType(f, drive.haxeui.Targets)) commands.focused = drive.haxeui.Targets.focused;
 		#end
-		var server = new Server(token, commands.dispatch, haxe.Timer.stamp);
+		// Haxe's sys.net.Socket cannot serve the channel on C# (see drive.cs.CsTransport).
+		var server:ITransport = #if cs new drive.cs.CsTransport(token, commands.dispatch, haxe.Timer.stamp) #else new Server(token, commands.dispatch, haxe.Timer.stamp) #end;
 		// A client that goes away, or a `key`/`drag` that times out, must not leave a key or button held.
 		server.onClientGone = commands.releaseHeld;
 		server.onTimeout = commands.releaseHeld;
