@@ -41,6 +41,16 @@ const sorted = (v) => (v && typeof v === "object" && !Array.isArray(v) ? Object.
 if (!process.env.SKIP_BUILD) execSync(`haxe ${hxml}`, { stdio: "inherit" });
 if (!existsSync(dll)) { console.log(`FAIL - HelloCs was not built (${dll})`); process.exit(1); }
 
+// Headless only, once: drive.cs.Input's text handling on its own (tests-cs/InputProbe.hx builds and runs
+// itself under -D haxeui_cs_run, and exits non-zero on a failure).
+if (!windowMode) {
+  let probe = "";
+  let status = 0;
+  try { probe = execSync("haxe tests-cs/input.hxml", { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }); } catch (e) { probe = String(e.stdout ?? "") + String(e.stderr ?? ""); status = e.status ?? 1; }
+  const said = probe.split(/\r?\n/).filter((l) => l.startsWith("input-probe:")).join("; ");
+  ok(status === 0 && /input-probe: ok/.test(probe), `tests-cs/input.hxml: ${said || "no input-probe line (exit " + status + ")"}`);
+}
+
 // Every app started here, so whatever happens the run ends and they die by their PIDs.
 const children = new Set();
 const watchdog = setTimeout(() => {
