@@ -42,8 +42,10 @@ compile, or an app that throws sits there with its event loop dead and a client 
 1. `-lib heaps-drive -lib haxeui-core -lib haxeui-cs -D haxeui_cs_drive -D drive` in a build of its own
    (plus `-D haxeui_cs_headless` for the headless one). Without `-D haxeui_cs_drive` nothing compiles in.
 2. Before `new HaxeUIApp`: `drive.cs.OffScreen.install();`. In a window build it asks for the window
-   described above (`DRIVE_VISIBLE=1` puts it on a display for a human to watch; it still takes no
-   focus). Headless it does nothing. An uncaught error ends the process (haxeui-cs reports it on
+   described above (`DRIVE_VISIBLE=1` puts it on a display for a human to watch: it still gets the
+   non-activating, tool-window styles every driven window gets, which should keep it from taking focus,
+   but **this mode has never been run**, so that is by reading the code, not by a run; do not expect it
+   to be safe to leave a person's work open next to it). Headless it does nothing. An uncaught error ends the process (haxeui-cs reports it on
    stderr and exits 70 for an error in a `haxe.Timer`, `MainLoop` or `Host.StartTimer`; an error thrown
    headless ends it the usual .NET way), and the socket closes with it.
 3. Once the UI is ready: `drive.cs.Channel.start(host, [new drive.haxeui.Targets(), /* yours */], dir);`

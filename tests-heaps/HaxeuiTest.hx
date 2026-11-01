@@ -22,6 +22,7 @@ class HaxeuiTest {
 	static var sameClicks = 0;
 	static var rightClicks = 0;
 	static var twiceClicks = 0;
+	static var scaledClicks = 0;
 	static var targets:drive.haxeui.Targets;
 	static var secret:TextField;
 	static var hinted:TextField;
@@ -78,6 +79,8 @@ class HaxeuiTest {
 			side.addComponent(menu);
 			var twice = new Button(); twice.id = "twiceBtn"; twice.text = "Twice"; twice.onClick = _ -> twiceClicks++;
 			side.addComponent(twice);
+			var scaled = new Button(); scaled.id = "scaledBtn"; scaled.text = "Scaled"; scaled.onClick = _ -> scaledClicks++;
+			side.addComponent(scaled);
 			outer.addComponent(side);
 			app.addComponent(outer);
 			app.start();
@@ -272,6 +275,29 @@ class HaxeuiTest {
 		check("drag: the slider moved", () -> expect(slider.pos > 50, "slider pos after the drag: " + slider.pos));
 		send("wheel: scroll a ScrollView taller inside than out", "wheel", {target: "#scroll", notches: 3}, o -> done(o));
 		check("wheel: the ScrollView scrolled", () -> expect(scroll.vscrollPos > 0, "vscrollPos after 3 notches: " + scroll.vscrollPos));
+
+		// The shared scale change, really clicked: the point Targets answers at Toolkit.scale 1.5 has to hit the
+		// nested component through hxd.Window.event and HaxeUI's own hit test, not only be the number the formula says.
+		// The scale is put back by the step after the click's check, and again by the check itself, whatever it found.
+		var scaleBefore = 1.0;
+		check("click at Toolkit.scale 1.5: set the scale", () -> { scaleBefore = haxe.ui.Toolkit.scaleX; haxe.ui.Toolkit.scale = 1.5; });
+		send("click at Toolkit.scale 1.5: #scaledBtn, a nested button", "click", {target: "#scaledBtn"}, o -> {
+			try {
+				var c = (cast haxe.ui.core.Screen.instance.rootComponents[0] : haxe.ui.core.Component).findComponent("scaledBtn", Button);
+				expectEqual(1.5, haxe.ui.Toolkit.scaleX, "setup: the scale is 1.5 for the click");
+				expect(c.parentComponent != null && c.parentComponent.parentComponent != null && c.screenLeft > 0 && c.screenTop > 0, "setup: #scaledBtn is nested and not at the origin");
+				done(o);
+			} catch (e:haxe.Exception) {
+				haxe.ui.Toolkit.scale = scaleBefore;
+				throw e;
+			}
+		});
+		check("click at Toolkit.scale 1.5: the nested button got the click", () -> {
+			try expectEqual(1, scaledClicks, "#scaledBtn clicks, a click at Toolkit.scale 1.5 on a nested button")
+			catch (e:haxe.Exception) { haxe.ui.Toolkit.scale = scaleBefore; throw e; }
+			haxe.ui.Toolkit.scale = scaleBefore;
+		});
+		check("click at Toolkit.scale 1.5: the scale is put back", () -> { haxe.ui.Toolkit.scale = scaleBefore; expectEqual(1.0, haxe.ui.Toolkit.scaleX, "Toolkit.scaleX is back to what it was"); });
 
 		// A shot reads the scene back through a render target: none may be left behind.
 		var textures = 0;
