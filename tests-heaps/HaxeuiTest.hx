@@ -156,6 +156,30 @@ class HaxeuiTest {
 				expectEqual("Button", h.node.type, "type");
 			case other: fail("bounds: " + other);
 		});
+		check("resolve: at Toolkit.scale 1.5 a nested component's position is screenLeft, its size width * 1.5", () -> {
+			// screenLeft/screenTop are screen pixels already (core multiplies a child's left and top by the
+			// scale); width and height are units. Nothing else here runs at a scale other than 1.
+			var c = (cast haxe.ui.core.Screen.instance.rootComponents[0] : haxe.ui.core.Component).findComponent("twiceBtn", Button);
+			expect(c.parentComponent != null && c.parentComponent.parentComponent != null, "#twiceBtn is nested");
+			var before = haxe.ui.Toolkit.scaleX;
+			try {
+				haxe.ui.Toolkit.scale = 1.5;
+				switch (targets.resolve("#twiceBtn", false)) {
+					case Found(h):
+						expect(c.screenLeft > 0 && c.screenTop > 0, "setup: #twiceBtn is not at the origin, or a doubled position would not differ");
+						expect(Math.abs(h.node.x - c.screenLeft) < 1, "x is screenLeft: " + h.node.x + " against " + c.screenLeft);
+						expect(Math.abs(h.node.y - c.screenTop) < 1, "y is screenTop: " + h.node.y + " against " + c.screenTop);
+						expectEqual(Math.round(c.width * 1.5), h.node.w, "w is width * 1.5");
+						expectEqual(Math.round(c.height * 1.5), h.node.h, "h is height * 1.5");
+						expect(Math.abs(h.cx - (h.node.x + h.node.w / 2)) < 1 && Math.abs(h.cy - (h.node.y + h.node.h / 2)) < 1, "the click point is the middle of the node");
+					case other: fail("bounds at 1.5: " + other);
+				}
+			} catch (e:Dynamic) {
+				haxe.ui.Toolkit.scale = before;
+				throw e;
+			}
+			haxe.ui.Toolkit.scale = before;
+		});
 		check("tree: hidden components and templates are left out, disabled ones kept", () -> {
 			var t = targets.tree(null, false);
 			expect(!contains(t, "ghost"), "no ghost");
@@ -240,8 +264,8 @@ class HaxeuiTest {
 
 		send("drag: the slider's thumb to near its end", "drag", () -> {
 			var r:Dynamic = {from: "#end-thumb", to: {
-				x: (slider.screenLeft + slider.width * 0.8) * haxe.ui.Toolkit.scaleX,
-				y: (slider.screenTop + slider.height / 2) * haxe.ui.Toolkit.scaleY
+				x: slider.screenLeft + slider.width * 0.8 * haxe.ui.Toolkit.scaleX,   // screenLeft is screen pixels, width is units
+				y: slider.screenTop + slider.height / 2 * haxe.ui.Toolkit.scaleY
 			}};
 			r;
 		}, o -> done(o));

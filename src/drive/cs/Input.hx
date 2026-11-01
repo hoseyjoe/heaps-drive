@@ -44,7 +44,14 @@ class Input implements drive.IInput {
 		AppDriver.MouseMove(x, y);
 	}
 
+	/** A press of its own (a drag's), so Avalonia does not count it with a click just before it. */
 	public function push(x:Float, y:Float, button:Int):Void {
+		AppDriver.NewClick();
+		press(x, y, button);
+	}
+
+	function press(x:Float, y:Float, button:Int):Void {
+		highSurrogate = 0;
 		var b = native(button);
 		if (heldButtons.indexOf(b) < 0) heldButtons.push(b);
 		pointerX = x;
@@ -71,9 +78,13 @@ class Input implements drive.IInput {
 		}
 	}
 
+	/** One click, or with `double` two presses in one gesture. Either way it is a click of its own:
+	    Avalonia counts presses close in time and place as a double click, and a text field answers one
+	    by selecting a word, so `click` then `type` on one field would otherwise replace its last word. */
 	public function click(x:Float, y:Float, button:Int, double:Bool):Void {
+		AppDriver.NewClick();
 		move(x, y);
-		for (_ in 0...(double ? 2 : 1)) { push(x, y, button); release(x, y, button); }
+		for (_ in 0...(double ? 2 : 1)) { press(x, y, button); release(x, y, button); }
 	}
 
 	/** Positive notches scroll down (heaps' sign); AppDriver's positive deltaY scrolls up. */
@@ -83,6 +94,7 @@ class Input implements drive.IInput {
 	}
 
 	public function keyDown(code:Int):Void {
+		highSurrogate = 0;
 		if (heldKeys.indexOf(code) < 0) heldKeys.push(code);
 		AppDriver.KeyDown(code);
 	}
@@ -93,7 +105,10 @@ class Input implements drive.IInput {
 	}
 
 	/** `charCode` is a UTF-16 unit, as Commands sends them; a character outside the BMP arrives as its
-	    two halves, and goes in as one text. A half with no partner goes in as U+FFFD. */
+	    two halves, and goes in as one text. A low half with no high one goes in as U+FFFD. A high half
+	    with no low one (the end of a `type`: IInput does not say when a text ends) is held until the next
+	    text; it is dropped by the next click, press, key or `releaseHeld`, so it never lands in whatever
+	    has the focus later. */
 	public function text(charCode:Int):Void {
 		if (highSurrogate != 0) {
 			var high = highSurrogate;

@@ -1,0 +1,13 @@
+# drive.cs.Input's text handling, headless: builds the app and runs it (exit 0, `input-probe: ok`).
+# `haxe tests-cs/input.hxml` from the repo root. -cp src, so it builds this checkout.
+-cp src
+-cp tests-cs
+-lib haxeui-core
+-lib haxeui-cs
+-D haxeui_cs_headless
+-D haxeui_cs_drive
+-D haxeui_cs_run
+-D drive
+-main InputProbe
+-cs bin/input-probe
+-w -WAll

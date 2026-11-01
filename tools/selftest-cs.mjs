@@ -100,7 +100,7 @@ function decodePng(buf) {
 const median = (a) => [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)];
 let run = null, c = null;
 const clients = [];
-let windowReads = 0;
+let windowReads = 0, guardFailures = 0;
 
 try {
   run = launch(dir);
@@ -123,8 +123,10 @@ try {
     if (!windowMode) return;
     const s = await c.send("state");
     windowReads++;
-    if (s.windowActive !== false || s.onDisplay !== false)
+    if (s.windowActive !== false || s.onDisplay !== false) {
+      guardFailures++;
       ok(false, `the window was never the user's: after "${after}" it reports windowActive=${s.windowActive}, onDisplay=${s.onDisplay}`);
+    }
   };
   /** One check: its failures are recorded and the run goes on; the window guard is read after it. */
   const check = async (name, fn) => {
@@ -168,12 +170,18 @@ try {
     const text = "héllo 😀";   // an accent, and a character outside the BMP: two UTF-16 units
     const r = await c.send("type", { target: "#name", text });
     ok(r.text === text, `type holds a surrogate pair together (${JSON.stringify(r.text)})`);
+    // Back to back on one field, with no pause: each click is a click of its own. Avalonia would count
+    // the second with the first as a double click and select the last word, which `type` then replaces.
+    const more = await c.send("type", { target: "#name", text: "!" });
+    ok(more.text === text + "!", `a type straight after a type adds to the text (${JSON.stringify(more.text)})`);
+    await c.send("click", { target: "#name" });
+    const last = await c.send("type", { target: "#name", text: "?" });
+    ok(last.text === text + "!?", `and so does a type straight after a click (${JSON.stringify(last.text)})`);
   });
 
   await check("held modifier", async () => {
-    // A second click on a field within the double-click interval selects a word, as it would for a
-    // person: let that pass, so the click `type` makes is a plain one.
-    await sleep(700);
+    // No pause is needed after the `type` above: its click and this check's `type` below are two
+    // clicks, and the second is never counted with the first as a double click (which would select a word).
     const text = (await state()).text;
     await c.send("key", { name: "Ctrl+A" });
     const all = await settle((s) => s.selection > 0);
@@ -181,7 +189,6 @@ try {
     await c.send("key", { name: "Delete" });
     const gone = await settle((s) => s.text === "");
     ok(gone.text === "", `and Delete removed the selection (${JSON.stringify(gone.text)})`);
-    await sleep(700);
     const r = await c.send("type", { target: "#name", text: "x" });
     ok(r.text === "x", `typing then answers just the new text (${JSON.stringify(r.text)})`);
   });
@@ -225,6 +232,9 @@ try {
     const r2 = await c.send("shot", { file: file("go.png"), within: "#go" });
     const png2 = decodePng(readFileSync(r2.file));
     ok(r2.w === go.w && r2.h === go.h && png2.w === go.w && png2.h === go.h, `shot within #go is its node's size (${r2.w}x${r2.h}, node ${go.w}x${go.h}, scale ${scale})`);
+    // A crop shifted by a few units would still be the right size: its edges must be the button's red.
+    const edges = [png2.at(3, Math.floor(go.h / 2)), png2.at(go.w - 4, Math.floor(go.h / 2))];
+    ok(edges.every((p) => p[0] === 255 && p[1] === 0 && p[2] === 0), `and its left and right edges are the button's red, so the crop is aligned (${edges.map((p) => p.slice(0, 3))})`);
     const r3 = await c.send("shot", { file: file("list.png"), within: "#list" });
     ok(r3.w === list.w && r3.h === list.h, `shot within #list is its node's size (${r3.w}x${r3.h}, node ${list.w}x${list.h})`);
   });
@@ -303,7 +313,7 @@ try {
 
   // The window is still not the user's, right before quit.
   await guard("before quit");
-  if (windowMode) ok(true, `the window was never active nor on a display (${windowReads} reads)`);
+  if (windowMode) ok(guardFailures === 0, `the window was never active nor on a display (${windowReads} reads, ${guardFailures} bad)`);
 
   await c.send("quit");
   c.close(); clients.splice(clients.indexOf(c), 1); c = null;

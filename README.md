@@ -33,7 +33,11 @@ Lifted from Simplified's desktop automation channel; the design is JoeClash's
 
 ## Using it (HaxeUI on C#)
 
-Needs `haxeui-cs` with its `AppDriver` (`-D haxeui_cs_drive`), `haxeui-core`, dotnet.
+Needs `haxeui-cs` **with driver support, which is not released yet**: `AppDriver` and `-D haxeui_cs_drive`
+(raw input, capture, the off-screen window, `NewClick`), the file-picker refusal in a driven build, and an
+uncaught error in a timer ending the app with exit 70. Against a haxeui-cs without them it does not
+compile, or an app that throws sits there with its event loop dead and a client waits for nothing. Also
+`haxeui-core`, dotnet.
 
 1. `-lib heaps-drive -lib haxeui-core -lib haxeui-cs -D haxeui_cs_drive -D drive` in a build of its own
    (plus `-D haxeui_cs_headless` for the headless one). Without `-D haxeui_cs_drive` nothing compiles in.
@@ -47,6 +51,10 @@ Needs `haxeui-cs` with its `AppDriver` (`-D haxeui_cs_drive`), `haxeui-core`, do
    `examples/HelloCs.hx` is the whole thing.
 4. The same client as above. Positions are window units (what Avalonia lays out in, not device pixels);
    `shot` is one image pixel per window unit, whatever the display's or `Toolkit.scale`'s scaling.
+
+Each `click` is a click of its own: `drive.cs.Input` calls `AppDriver.NewClick()` before it, so two
+commands back to back on one field are never counted by Avalonia as a double click (which selects a
+word); `click` with `double: true` is one gesture of two presses.
 
 C# limits: no copy, cut or paste keys (as on HashLink); `type` takes any text, including characters
 outside the BMP; file pickers refuse in a driven build (haxeui-cs), because a native picker would take
@@ -67,6 +75,7 @@ answers `{focused}` (the focused component's id, or its type); `Commands.focused
     node tools/selftest.mjs  # end to end: launch the example off-screen and drive it (HashLink)
 
     node tools/selftest-channel-cs.mjs             # the channel on C#, headless: transport limits and framing
+    haxe tests-cs/input.hxml                       # drive.cs.Input's text (surrogate pairs, half a character), headless
     node tools/selftest-cs.mjs headless            # examples/HelloCs, headless, through the real socket
     node tools/selftest-cs.mjs window              # the same in a real window put off every display
     node tools/selftest-cs.mjs window --scale 1.5  # with Toolkit.scale 1.5: clicks and crops still line up
