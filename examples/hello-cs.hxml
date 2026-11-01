@@ -1,0 +1,13 @@
+# HelloCs in a real Avalonia window, put off every display and never activated (drive.cs.OffScreen).
+# tools/selftest-cs.mjs window builds and launches it: dotnet bin/hello-cs/bin/Debug/net10.0/HelloCs.dll
+# DRIVE_VISIBLE=1 puts the window on a display for a human to watch (it still takes no focus).
+# -cp src instead of -lib heaps-drive, so it builds this checkout whichever one haxelib points at.
+-cp src
+-cp examples
+-lib haxeui-core
+-lib haxeui-cs
+-D haxeui_cs_drive
+-D drive
+-main HelloCs
+-cs bin/hello-cs
+-w -WAll

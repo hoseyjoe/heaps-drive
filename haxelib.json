@@ -2,11 +2,11 @@
 	"name": "heaps-drive",
 	"url": "https://github.com/hoseyjoe/heaps-drive",
 	"license": "MIT",
-	"tags": ["heaps", "haxeui", "testing", "automation"],
+	"tags": ["heaps", "haxeui", "cs", "testing", "automation"],
 	"description": "Drive a Heaps app's real GUI from outside, without the user's mouse or keyboard.",
 	"version": "0.1.0",
 	"classPath": "src",
-	"releasenote": "First version: HashLink desktop.",
+	"releasenote": "HashLink desktop, and HaxeUI on C# (haxeui-cs) headless or in an off-screen window.",
 	"contributors": [],
 	"dependencies": {}
 }

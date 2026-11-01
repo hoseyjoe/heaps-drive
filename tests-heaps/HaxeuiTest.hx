@@ -151,7 +151,7 @@ class HaxeuiTest {
 		check("resolve: bounds are window pixels", () -> switch (targets.resolve("#go", false)) {
 			case Found(h):
 				var c = (cast haxe.ui.core.Screen.instance.rootComponents[0] : haxe.ui.core.Component).findComponent("go", Button);
-				expect(Math.abs(h.node.x - c.screenLeft * haxe.ui.Toolkit.scaleX) < 1, "x is screenLeft through an identity viewport");
+				expect(Math.abs(h.node.x - c.screenLeft) < 1, "x is screenLeft (screen pixels already) through an identity viewport");
 				expect(h.node.w > 0 && h.node.h > 0, "a size");
 				expectEqual("Button", h.node.type, "type");
 			case other: fail("bounds: " + other);

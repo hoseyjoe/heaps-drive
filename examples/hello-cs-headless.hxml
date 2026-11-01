@@ -1,0 +1,13 @@
+# HelloCs headless: HaxeUI on Avalonia with no window, served by drive.cs. tools/selftest-cs.mjs headless
+# builds and launches it: dotnet bin/hello-cs-headless/bin/Debug/net10.0/HelloCs.dll
+# -cp src instead of -lib heaps-drive, so it builds this checkout whichever one haxelib points at.
+-cp src
+-cp examples
+-lib haxeui-core
+-lib haxeui-cs
+-D haxeui_cs_headless
+-D haxeui_cs_drive
+-D drive
+-main HelloCs
+-cs bin/hello-cs-headless
+-w -WAll

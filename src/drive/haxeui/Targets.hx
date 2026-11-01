@@ -27,7 +27,9 @@ private enum Lookup {
 class Targets implements drive.ITargets {
 	static inline var MAX_CANDIDATES = 20;
 
-	/** Toolkit pixels to window pixels: through the scene's viewport under Heaps, as they are elsewhere. */
+	/** Screen pixels to window pixels: through the scene's viewport under Heaps, as they are elsewhere.
+	    A component's `screenLeft` and `screenTop` are screen pixels already (core multiplies a child's
+	    `left` and `top` by Toolkit.scale); its `width` and `height` are HaxeUI units, times the scale. */
 	var toWindow:(Float, Float)->{x:Float, y:Float};
 
 	#if heaps
@@ -87,14 +89,14 @@ class Targets implements drive.ITargets {
 	}
 
 	function hit(c:Component):Hit {
-		var m = toWindow((c.screenLeft + c.width / 2) * Toolkit.scaleX, (c.screenTop + c.height / 2) * Toolkit.scaleY);
+		var m = toWindow(c.screenLeft + c.width * Toolkit.scaleX / 2, c.screenTop + c.height * Toolkit.scaleY / 2);
 		return {node: node(c, false, false), cx: m.x, cy: m.y, occluder: () -> null, text: () -> ownText(c)};
 	}
 
 	public function node(c:Component, withChildren:Bool, includeHidden:Bool):Node {
 		var focus = haxe.ui.focus.FocusManager.instance.focus;
-		var p0 = toWindow(c.screenLeft * Toolkit.scaleX, c.screenTop * Toolkit.scaleY);
-		var p1 = toWindow((c.screenLeft + c.width) * Toolkit.scaleX, (c.screenTop + c.height) * Toolkit.scaleY);
+		var p0 = toWindow(c.screenLeft, c.screenTop);
+		var p1 = toWindow(c.screenLeft + c.width * Toolkit.scaleX, c.screenTop + c.height * Toolkit.scaleY);
 		var n:Node = {
 			source: "haxeui", type: typeOf(c), id: c.id == null ? "" : c.id, text: ownText(c),
 			x: Math.round(p0.x), y: Math.round(p0.y), w: Math.round(p1.x - p0.x), h: Math.round(p1.y - p0.y),
