@@ -39,6 +39,7 @@ class CsTransport implements ITransport {
 		this.clock = clock;
 		listener = new NativeSocket(AddressFamily.InterNetwork, SocketType.Stream, cs.system.net.sockets.ProtocolType.Tcp);
 		listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+		listener.Blocking = false;   // an Accept after a Poll must not wait if the connection has since been reset
 		listener.Listen(2);
 		port = cast(listener.LocalEndPoint, IPEndPoint).Port;
 	}
@@ -96,6 +97,7 @@ class CsTransport implements ITransport {
 
 /** `SocketConnection` (see Server.hx) over a System.Net.Sockets socket: the same limits, never waits. */
 class CsConnection implements IConnection {
+	// The limits are SocketConnection's (Server.hx); copied, not referenced, so nothing of sys.net is compiled for C#.
 	public static inline var MAX_READ_PER_TICK = 256 * 1024;
 	public static inline var MAX_PARTIAL = 1 << 20;
 	public static inline var MAX_OUTBOX = 4 << 20;
@@ -151,9 +153,9 @@ class CsConnection implements IConnection {
 		if (gone) throw "the client went away";
 	}
 
-	/** SocketError.WouldBlock is 10035 on every platform; the extern enum Haxe makes of it has no such field. */
+	/** Compared by name: the extern enum Haxe makes of SocketError has no WouldBlock field to compare with. */
 	static inline function wouldBlock(e:SocketException):Bool
-		return (untyped __cs__("(int){0}.SocketErrorCode", e) : Int) == 10035;
+		return Std.string(e.SocketErrorCode) == "WouldBlock";
 
 	/** Bytes read into `buf` now; -1 when there are none yet; 0 when the client has closed. */
 	function readSome(buf:Bytes):Int {

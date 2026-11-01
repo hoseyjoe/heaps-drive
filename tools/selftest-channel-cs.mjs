@@ -3,7 +3,7 @@
 // Run from the repo root: node tools/selftest-channel-cs.mjs        (SKIP_BUILD=1 reuses bin/probe)
 import { spawn, execSync } from "node:child_process";
 import net from "node:net";
-import { existsSync, mkdirSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { connect } from "./drive.mjs";
 
@@ -26,6 +26,8 @@ const app = spawn("dotnet", [dll], { env: { ...process.env, DRIVE_DIR: dir }, st
 app.stdout.setEncoding("utf8"); app.stderr.setEncoding("utf8");
 app.stdout.on("data", (s) => { out += s; }); app.stderr.on("data", (s) => { out += s; });
 const exited = new Promise((r) => app.on("exit", r));
+let appExit = null;
+exited.then((c) => { appExit = c ?? "signal"; });
 // A run ends by itself: whatever hangs, the child dies by its PID and the run fails.
 const watchdog = setTimeout(() => {
   console.log("FAIL - the selftest took over 90 s; killing the probe");
@@ -47,15 +49,52 @@ const rawLine = (s, ms = 3000) => new Promise((res) => {
 
 try {
   const deadline = Date.now() + 40000;
-  while (!existsSync(file) && Date.now() < deadline) await sleep(100);
+  while (!existsSync(file) && appExit === null && Date.now() < deadline) await sleep(100);
   ok(existsSync(file), "the app wrote drive.json");
-  if (!existsSync(file)) throw new Error("drive.json never appeared");
-  const { port, token } = JSON.parse((await import("node:fs")).readFileSync(file, "utf8"));
+  if (!existsSync(file)) throw new Error(appExit === null ? "drive.json never appeared" : `the app exited (${appExit}) before writing drive.json`);
+  const { port, token } = JSON.parse(readFileSync(file, "utf8"));
+  const rawConnect = async () => { const s = net.connect(port, "127.0.0.1"); s.on("error", () => {}); await new Promise((r) => s.once("connect", r)); return s; };
+  const line = (id, cmd, args) => JSON.stringify({ id, token, cmd, args }) + "\n";
+  const until = async (f, ms) => { const end = Date.now() + ms; while (!f() && Date.now() < end) await sleep(25); return f(); };
+  /** The next client is served within a second (a stuck or abusive one has been let go). */
+  const servedNext = async () => {
+    const t = Date.now();
+    const n = await open();
+    const r = await code(n.send("find", { target: "#table" }));
+    const took = Date.now() - t;
+    n.close(); clients.splice(clients.indexOf(n), 1); await sleep(150);
+    return { served: r === null && took < 1000, r, took };
+  };
+
+  // The reply text itself: JSON.parse cannot tell 10 from 10.0, and a C# Json printer can write the latter.
+  {
+    const s = await rawConnect();
+    const p = rawLine(s);
+    s.write(line(1, "find", { target: "#table" }));
+    const raw = await p;
+    s.destroy(); await sleep(150);
+    ok(raw !== null && /"x":10[,}]/.test(raw) && /"y":20[,}]/.test(raw) && /"w":300[,}]/.test(raw) && /"h":200[,}]/.test(raw)
+      && /"id":"table"/.test(raw), `find answers the table's node with whole numbers on the wire (${raw})`);
+  }
+  // A request split inside a two-byte character: the halves are put back together before decoding.
+  {
+    const s = await rawConnect();
+    const p = rawLine(s);
+    const bytes = Buffer.from(line(2, "find", { target: "text:é" }), "utf8");
+    const at = bytes.indexOf(0xc3) + 1;
+    s.write(bytes.subarray(0, at));
+    await sleep(250);   // several frames: the first half has been read and kept
+    s.write(bytes.subarray(at));
+    const raw = await p;
+    s.destroy(); await sleep(150);
+    let got = null;
+    try { got = JSON.parse(raw).result.id; } catch {}
+    ok(got === "é", `a character split across two writes arrives whole (${raw})`);
+  }
 
   let a = await open();
   const found = await a.send("find", { target: "#table" });
-  ok(found.id === "table" && found.source === "table" && [found.x, found.y, found.w, found.h].every(Number.isInteger)
-    && found.x === 10 && found.y === 20 && found.w === 300 && found.h === 200, `find answers the table's node with whole numbers (${JSON.stringify([found.x, found.y, found.w, found.h])})`);
+  ok(found.id === "table" && found.source === "table", "find answers the table's node through the client");
 
   await a.send("wheel", { target: "#table", notches: 2 });
   const log = (await a.send("state")).log;
@@ -94,7 +133,56 @@ try {
   wrong.destroy();
   ok(unauth !== null && JSON.parse(unauth).code === "unauthorized" && JSON.parse(unauth).id === 7, `a wrong token is unauthorized (${unauth})`);
 
-  await sleep(100);
+  // A client that asks for 12 MB and reads none of it: its outbox passes the limit (4 MB), it is cut off,
+  // and the next client is served - the UI thread never waited on it.
+  {
+    const stuck = await rawConnect();
+    stuck.pause();
+    for (let i = 1; i <= 8; i++) stuck.write(line(i, "state", { big: 1500000 }));
+    await sleep(1500);
+    const next = await servedNext();
+    ok(next.served, `a client that never reads is cut off, and the next is served (${next.r ?? "served"} after ${next.took} ms)`);
+    let closed = false;
+    stuck.on("close", () => { closed = true; });
+    stuck.resume();
+    ok(await until(() => closed, 5000), "the stuck client's connection was closed by the app");
+    stuck.destroy();
+  }
+
+  // A request line that never ends: past 1 MiB with no newline, the connection is closed.
+  {
+    const s = await rawConnect();
+    let closed = false;
+    s.on("close", () => { closed = true; });
+    const chunk = Buffer.alloc(64 * 1024, 97);
+    for (let i = 0; i < 20 && !closed; i++) { s.write(chunk); await sleep(10); }
+    ok(await until(() => closed, 5000), "a request line over 1 MiB with no end closes the connection");
+    s.destroy();
+    await sleep(150);
+    const next = await servedNext();
+    ok(next.served, `the next client is served after it (${next.r ?? "served"} after ${next.took} ms)`);
+  }
+
+  // A reader that stalls: 3 MB of replies back up behind a client that is not reading, so the app
+  // writes them in pieces over later frames; once it reads, both arrive whole.
+  {
+    const s = await rawConnect();
+    s.pause();
+    s.write(line(1, "state", { big: 1500000 }) + line(2, "state", { big: 1500000 }));
+    await sleep(1500);
+    let text = "";
+    s.setEncoding("utf8");
+    s.on("data", (d) => { text += d; });
+    const t = Date.now();
+    s.resume();
+    await until(() => text.split("\n").length >= 3, 8000);
+    const replies = text.split("\n").filter((l) => l !== "").map((l) => { try { return JSON.parse(l); } catch { return null; } });
+    ok(replies.length === 2 && replies.every((r) => r && r.ok && r.result.blob.length === 1500000 && /^x+$/.test(r.result.blob)),
+      `replies held up behind a stalled reader arrive whole (${replies.length} replies, ${Date.now() - t} ms after it read)`);
+    s.destroy();
+    await sleep(150);
+  }
+
   const c = await open();
   const t1 = Date.now();
   const big = await c.send("state", { big: 1500000 });
@@ -118,6 +206,6 @@ try {
     try { process.kill(app.pid); } catch {}
   }
 }
-if (failures) console.log("--- probe output ---\n" + out.slice(-3000));
+if (failures || process.env.SHOW_OUTPUT) console.log("--- probe output ---\n" + out.slice(-3000));
 console.log(failures === 0 ? "selftest passed" : `selftest: ${failures} failed`);
 process.exit(failures === 0 ? 0 : 1);

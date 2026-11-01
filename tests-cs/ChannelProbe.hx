@@ -63,6 +63,8 @@ class ChannelProbe {
 			var node:Node = {source: "table", type: "Table", id: "table", text: "table", x: 10, y: 20, w: 300, h: 200, disabled: false, focused: false};
 			finder.table.set("#table", Found({node: node, cx: 160, cy: 120, occluder: () -> null, text: () -> "table"}));
 			finder.table.set("#never", Missing("never there"));
+			var accent:Node = {source: "table", type: "Label", id: "é", text: "é", x: 1, y: 2, w: 3, h: 4, disabled: false, focused: false};
+			finder.table.set("text:é", Found({node: accent, cx: 2, cy: 4, occluder: () -> null, text: () -> "é"}));
 			var input = new RecordingInput();
 			var host = new ProbeHost(input);
 			var dir = Sys.getEnv("DRIVE_DIR");
