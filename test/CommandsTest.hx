@@ -168,6 +168,23 @@ class CommandsTest extends utest.Test {
 		}
 	}
 
+	function testFilePickerAnswersOnlyThroughTheHook() {
+		Assert.equals("bad_request", code(run("filePicker", {paths: ["a.txt"]})), "no hook: this build cannot answer one");
+		var answered:Array<Array<String>> = [];
+		commands.filePicker = paths -> answered.push(paths);
+		switch (settle(run("filePicker", {paths: ["a.txt", "b.txt"]}))) {
+			case Done(_): Assert.same([["a.txt", "b.txt"]], answered);
+			case other: Assert.fail("" + other);
+		}
+		switch (settle(run("filePicker", {paths: []}))) {
+			case Done(_): Assert.same([], answered[1], "no paths: Cancel");
+			case other: Assert.fail("" + other);
+		}
+		Assert.equals("bad_request", code(run("filePicker", {})));
+		Assert.equals("bad_request", code(run("filePicker", {paths: [1]})));
+		Assert.equals(2, answered.length, "a bad request answers nothing");
+	}
+
 	function testDragPushesMovesAndReleases() {
 		targets.table.set("#a", Found(FakeTargets.hit("a", 0, 0)));
 		switch (settle(run("drag", {from: "#a", to: {x: 20, y: 0}}), 30)) {

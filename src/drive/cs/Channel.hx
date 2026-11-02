@@ -3,6 +3,7 @@ package drive.cs;
 #if (haxeui_cs && haxeui_cs_drive)
 import haxe.ui.backend.cs.Callbacks;
 import haxe.ui.backend.cs.native.Native.AppDriver;
+import haxe.ui.backend.cs.native.Native.FileDialogs;
 
 /**
  * Opens the drive channel for a HaxeUI app on C# (heaps-drive spec §1), headless or in a real
@@ -15,6 +16,15 @@ class Channel {
 	public static function start(host:Null<IDriveHost>, finders:Array<ITargets>, dir:String):Void {
 		var cleanup = Start.open(host, finders, new Input(), new Shot(), new CsWindow(), dir);
 		AppDriver.OnClosed(Callbacks.callback(cleanup));
+	}
+
+	/** The `filePicker` command: every picker from now on answers with these paths at once (none:
+	    Cancel), where a driven build would otherwise refuse. No picker opens, so its code does not run:
+	    this tests what the app does with an answer, not the picker. */
+	public static function answerFilePickers(paths:Array<String>):Void {
+		var native = new cs.NativeArray<String>(paths.length);
+		for (i in 0...paths.length) native[i] = paths[i];
+		FileDialogs.TestResponse = native;
 	}
 
 	#if haxeui_cs_headless

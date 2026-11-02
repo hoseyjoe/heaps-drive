@@ -96,6 +96,15 @@ try {
   const found = await a.send("find", { target: "#table" });
   ok(found.id === "table" && found.source === "table", "find answers the table's node through the client");
 
+  // A driven build refuses a file picker (as cancelled) until the channel gives it an answer.
+  ok((await a.send("state", { pick: true })).picked === null, "a file picker is refused as cancelled");
+  await a.send("filePicker", { paths: ["C:/somewhere/é.txt"] });
+  const picked = (await a.send("state", { pick: true })).picked;
+  ok(picked === "C:/somewhere/é.txt", `filePicker answers the next picker (${picked})`);
+  await a.send("filePicker", { paths: [] });
+  ok((await a.send("state", { pick: true })).picked === null, "filePicker with no paths answers Cancel");
+  ok((await code(a.send("filePicker", { paths: [1] }))) === "bad_request", "filePicker refuses a path that is not a string");
+
   await a.send("wheel", { target: "#table", notches: 2 });
   const log = (await a.send("state")).log;
   ok(log.includes("wheel 160,120 2"), `wheel with notches 2 reached the input (${JSON.stringify(log)})`);

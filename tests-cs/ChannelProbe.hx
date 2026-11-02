@@ -34,7 +34,8 @@ class RecordingInput implements IInput {
 	public function touchesClipboard(codes:Array<Int>):Bool return false;
 }
 
-/** `state` answers the input log, or with {big: n} a string of n characters; `quit` ends the loop. */
+/** `state` answers the input log, with {big: n} a string of n characters, or with {pick: true} what a
+    file picker answers (null: cancelled); `quit` ends the loop. */
 class ProbeHost implements IDriveHost {
 	public var quitting = false;
 	var input:RecordingInput;
@@ -45,6 +46,11 @@ class ProbeHost implements IDriveHost {
 			var b = new StringBuf();   // rpad would be quadratic at this size
 			for (_ in 0...(args.big : Int)) b.addChar("x".code);
 			return {blob: b.toString()};
+		}
+		if (args != null && args.pick == true) {
+			var picked:Dynamic = "no answer";
+			new haxe.ui.containers.dialogs.OpenFileDialog({}, (_, files) -> picked = files == null ? null : files[0].fullPath).show();
+			return {picked: picked};
 		}
 		return {log: input.log};
 	}

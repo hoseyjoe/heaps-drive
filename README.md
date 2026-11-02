@@ -60,7 +60,10 @@ word); `click` with `double: true` is one gesture of two presses.
 
 C# limits: no copy, cut or paste keys (as on HashLink); `type` takes any text, including characters
 outside the BMP; file pickers refuse in a driven build (haxeui-cs), because a native picker would take
-the user's focus.
+the user's focus. `filePicker {paths: [...]}` makes every picker from then on answer with those paths
+(`[]`: Cancel) without opening, so a run can go on through what the app does with a file. It tests that
+and not the picker, whose code does not run. HashLink's picker is `hl.UI`'s, which the channel cannot
+answer, so the command is refused there.
 
 ## Targets
 

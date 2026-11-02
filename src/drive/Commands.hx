@@ -19,6 +19,9 @@ class Commands {
 	/** What has the keyboard focus, for `key`'s answer: an id or a type, null for nothing. Unset, `key`
 	    answers {} — the toolkit that knows is the app's (Start sets HaxeUI's when it is a finder). */
 	public var focused:Null<Void->Null<String>> = null;
+	/** Answers the app's file pickers from now on with these paths (none: Cancel). Unset, `filePicker`
+	    is refused: only a backend whose pickers can be answered sets it (Start, on haxeui-cs). */
+	public var filePicker:Null<Array<String>->Void> = null;
 
 	var finder:Finder;
 	var input:IInput;
@@ -52,6 +55,7 @@ class Commands {
 			case "state": host == null ? Failed("bad_request", "no app state in this build") : Done(host.state(a));
 			case "wait": wait(a);
 			case "resize": resize(a);
+			case "filePicker": answerFilePicker(a);
 			case "quit": quit();
 			case _: Failed("bad_request", "unknown command '" + r.cmd + "'");
 		};
@@ -254,6 +258,15 @@ class Commands {
 			if (s.w != w || s.h != h) return null;
 			return ++settled >= 3 ? Done(s) : null;
 		}, clock() + DEFAULT_TIMEOUT_MS / 1000, () -> window.size());
+	}
+
+	function answerFilePicker(a:Dynamic):Outcome {
+		if (filePicker == null) return Failed("bad_request", "file pickers cannot be answered in this build");
+		if (!Std.isOfType(a.paths, Array)) return Failed("bad_request", "filePicker needs paths: an array of strings, empty for Cancel");
+		var paths:Array<Dynamic> = a.paths;
+		for (p in paths) if (!Std.isOfType(p, String)) return Failed("bad_request", "filePicker needs paths: an array of strings, empty for Cancel");
+		filePicker([for (p in paths) (p : String)]);
+		return Done({});
 	}
 
 	/** Answers first, then exits on a later frame so the reply reaches the client. */

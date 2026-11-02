@@ -8,7 +8,7 @@
 //
 // Commands: tree [within] | find target | click target [right double force] | type target text |
 //   key name | wheel target notches | drag from to | wait condition [timeoutMs] |
-//   shot file [within] | state [app args] | resize w h | quit
+//   shot file [within] | state [app args] | resize w h | filePicker paths (C# only; [] for Cancel) | quit
 // Targets: "#id", "text:Exact", "text~:part" (any case), "name:objectName", an app's own prefixes,
 //   or { target, within }. Errors: not_found, ambiguous (with candidates), occluded (force: true
 //   clicks anyway), disabled, bad_request, timeout (with lastSeen), unauthorized, busy, internal.
